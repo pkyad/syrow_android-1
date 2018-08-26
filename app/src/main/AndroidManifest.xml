@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="info.androidhive.gcm">
+    package="in.cioc.syrow">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -20,10 +20,6 @@
             </intent-filter>
         </activity>
 
-        <!-- END Added for GCM -->
-        <activity android:name=".MainActivity">
-
-        </activity>
     </application>
 
 </manifest>

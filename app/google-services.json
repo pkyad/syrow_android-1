@@ -8,10 +8,10 @@
     {
       "client_info": {
         "mobilesdk_app_id": "1:976269300166:android:66ecce2233c7b16c",
-        "client_id": "android:info.androidhive.gcm",
+        "client_id": "android:in.cioc.syrow",
         "client_type": 1,
         "android_client_info": {
-          "package_name": "info.androidhive.gcm"
+          "package_name": "in.cioc.syrow"
         }
       },
       "oauth_client": [],
