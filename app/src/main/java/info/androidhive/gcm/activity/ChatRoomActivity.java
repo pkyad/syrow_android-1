@@ -56,8 +56,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         inputMessage = (EditText) findViewById(R.id.message);
         btnSend = (Button) findViewById(R.id.btn_send);

@@ -11,12 +11,8 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
-
         <activity
-            android:name=".activity.ChatRoomActivity"
-            android:label="@string/title_activity_chat_room_discussion"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:name=".activity.ChatRoomActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -24,8 +20,10 @@
             </intent-filter>
         </activity>
 
-
         <!-- END Added for GCM -->
+        <activity android:name=".MainActivity">
+
+        </activity>
     </application>
 
 </manifest>
