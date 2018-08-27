@@ -124,6 +124,13 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+            }
+        });
+
         fetchChatThread();
 
         Session session;
@@ -198,18 +205,14 @@ public class ChatRoomActivity extends AppCompatActivity {
         params.put("sentByAgent", false);
         params.put("uid", millSec);
 
-
         client.post(Backend.url+"/api/support/supportChat/", params, new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject object) {
                 try {
                     Toast.makeText(getApplicationContext(), "" + object.getString("message"), Toast.LENGTH_LONG).show();
-//                    JSONObject commentObj = obj.getJSONObject("message");
                     String commentId = object.getString("pk");
                     String commentText = object.getString("message");
                     String createdAt = object.getString("created");
-//                    JSONObject userObj = object.getJSONObject("user");
-
                     String userId = object.getString("uid");
                     String userName = object.getString("user");
                     String attachment = object.getString("attachment");
@@ -218,7 +221,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     User user = new User(userId, userName, null);
 
                     Message message = new Message();
-                    message.setId(commentId);
+                    message.setId(userId);
                     message.setMessage(commentText);
                     message.setCreatedAt(createdAt);
                     message.setUser(user);
