@@ -106,27 +106,27 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                     @Override
                     public void onClick(View view) {
                         Toast.makeText(mContext, "just wait...", Toast.LENGTH_SHORT).show();
-                        new ImageViewer.Builder(mContext,
-                                new ImageLoader() {
-                                    @Override
-                                    public void showImage(final int position, Object path, ImageView imageView) {
-                                        Glide.with(MyApplication.getContext())
-                                                .load(path.toString())
-                                                .into(imageView);
-                                    }
-                                })
-                                .setIndex(2)
-                                .setPaths(paths)
-                                .setTransformerType(ImageViewer.TYPE_CUBEOUT_TRANSFORMER)
-                                .setOnImageLongClickListener(new OnImageLongClickListener() {
-                                    @Override
-                                    public boolean onImageLongClick(int i, String s, PhotoView photoView, ImageViewer imageViewer) {
-                                        imageViewer.dismiss();
-                                        return false;
-                                    }
-                                })
-                                .build()
-                                .show("ImageViewer");
+//                        new ImageViewer.Builder(mContext,
+//                                new ImageLoader() {
+//                                    @Override
+//                                    public void showImage(final int position, Object path, ImageView imageView) {
+//                                        Glide.with(MyApplication.getContext())
+//                                                .load(path.toString())
+//                                                .into(imageView);
+//                                    }
+//                                })
+//                                .setIndex(2)
+//                                .setPaths(paths)
+//                                .setTransformerType(ImageViewer.TYPE_CUBEOUT_TRANSFORMER)
+//                                .setOnImageLongClickListener(new OnImageLongClickListener() {
+//                                    @Override
+//                                    public boolean onImageLongClick(int i, String s, PhotoView photoView, ImageViewer imageViewer) {
+//                                        imageViewer.dismiss();
+//                                        return false;
+//                                    }
+//                                })
+//                                .build()
+//                                .show("ImageViewer");
                     }
                 });
             }
