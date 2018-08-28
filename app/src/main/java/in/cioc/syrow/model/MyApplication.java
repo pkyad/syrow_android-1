@@ -1,10 +1,11 @@
-package in.cioc.syrow.app;
+package in.cioc.syrow.model;
 
 /**
  * Created by Lincoln on 14/10/15.
  */
 
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 
@@ -27,6 +28,7 @@ public class MyApplication extends Application {
     private RequestQueue mRequestQueue;
 
     private static MyApplication mInstance;
+    private static Context sContext;
 
     private MyPreferenceManager pref;
 
@@ -34,6 +36,7 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         mInstance = this;
+        sContext = getApplicationContext();
     }
 
     public static synchronized MyApplication getInstance() {
@@ -60,6 +63,10 @@ public class MyApplication extends Application {
     public <T> void addToRequestQueue(Request<T> req) {
         req.setTag(TAG);
         getRequestQueue().add(req);
+    }
+
+    public static Context getContext() {
+        return sContext;
     }
 
 

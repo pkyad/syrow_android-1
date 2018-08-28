@@ -61,7 +61,7 @@ import in.cioc.syrow.Backend;
 import in.cioc.syrow.R;
 import in.cioc.syrow.adapter.ChatRoomThreadAdapter;
 import in.cioc.syrow.app.Config;
-import in.cioc.syrow.app.MyApplication;
+import in.cioc.syrow.model.MyApplication;
 import in.cioc.syrow.helper.Utility;
 import in.cioc.syrow.model.ChatThread;
 import in.cioc.syrow.model.Message;
@@ -123,7 +123,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         // self user id is to identify the message owner
         String selfUserId = "3333";
 
-        mAdapter = new ChatRoomThreadAdapter(this, messageArrayList, selfUserId);
+        mAdapter = new ChatRoomThreadAdapter(context, messageArrayList, selfUserId);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);

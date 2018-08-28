@@ -14,15 +14,25 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
+import cn.imageviewer.helper.ImageLoader;
+import cn.imageviewer.helper.OnImageLongClickListener;
+import cn.imageviewer.helper.OnLoadListener;
+import cn.imageviewer.view.ImageViewer;
 import in.cioc.syrow.R;
 import in.cioc.syrow.model.Message;
+import in.cioc.syrow.model.MyApplication;
+import uk.co.senab.photoview.PhotoView;
 
 public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAdapter.ViewHolder> {
 
@@ -34,6 +44,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
 
     private Context mContext;
     private ArrayList<Message> messageArrayList;
+    List<Object> paths;
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         TextView message, timestamp;
@@ -60,7 +71,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemView;
-
+        paths = new ArrayList<>();
         // view type is to identify where to render the chat message
         // left or right
         if (viewType == SELF) {
@@ -89,10 +100,33 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                 Glide.with(mContext)
                         .load(message.getMessageImg())
                         .into(holder.messageImage);
+                paths.add(message.getMessageImg());
+
                 holder.messageImage.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         Toast.makeText(mContext, "just wait...", Toast.LENGTH_SHORT).show();
+                        new ImageViewer.Builder(mContext,
+                                new ImageLoader() {
+                                    @Override
+                                    public void showImage(final int position, Object path, ImageView imageView) {
+                                        Glide.with(MyApplication.getContext())
+                                                .load(path.toString())
+                                                .into(imageView);
+                                    }
+                                })
+                                .setIndex(2)
+                                .setPaths(paths)
+                                .setTransformerType(ImageViewer.TYPE_CUBEOUT_TRANSFORMER)
+                                .setOnImageLongClickListener(new OnImageLongClickListener() {
+                                    @Override
+                                    public boolean onImageLongClick(int i, String s, PhotoView photoView, ImageViewer imageViewer) {
+                                        imageViewer.dismiss();
+                                        return false;
+                                    }
+                                })
+                                .build()
+                                .show("ImageViewer");
                     }
                 });
             }
