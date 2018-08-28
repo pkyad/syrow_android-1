@@ -1,17 +1,27 @@
 package in.cioc.syrow.activity;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -34,6 +44,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -47,6 +62,7 @@ import in.cioc.syrow.R;
 import in.cioc.syrow.adapter.ChatRoomThreadAdapter;
 import in.cioc.syrow.app.Config;
 import in.cioc.syrow.app.MyApplication;
+import in.cioc.syrow.helper.Utility;
 import in.cioc.syrow.model.ChatThread;
 import in.cioc.syrow.model.Message;
 import in.cioc.syrow.model.User;
@@ -70,11 +86,18 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ImageView btnSend, btnAttach;
     private AsyncHttpClient client;
     boolean thread = true;
+    Context context;
+    private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
+    private Button btnSelect;
+    private ImageView ivImage;
+    String base64;
+    private String userChoosenTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
+        this.context = ChatRoomActivity.this;
         client = new AsyncHttpClient();
 
         inputMessage = findViewById(R.id.message);
@@ -85,7 +108,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         chatRoomId = intent.getStringExtra("chat_room_id");
         String title = intent.getStringExtra("name");
 
-        getSupportActionBar().setTitle(title);
+        getSupportActionBar().setTitle("Syrow");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         if (chatRoomId == null) {
@@ -124,10 +147,10 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
-        btnSend.setOnClickListener(new View.OnClickListener() {
+        btnAttach.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent();
+                selectImage();
             }
         });
 
@@ -186,6 +209,55 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
+    private void selectImage() {
+        final CharSequence[] items = { "Take Photo", "Choose a photo from the gallery",
+                "Cancel" };
+
+        View v = getLayoutInflater().inflate(R.layout.layout_gallery_and_camera, null, false);
+        ImageView btnCamera = v.findViewById(R.id.btn_camera);
+        ImageView btnGallery = v.findViewById(R.id.btn_gallery);
+
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setView(v);
+        AlertDialog ad = builder.create();
+        btnCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                cameraIntent();
+                ad.dismiss();
+            }
+        });
+        btnGallery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                galleryIntent();
+                ad.dismiss();
+            }
+        });
+//        builder.setItems(items, new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int item) {
+//                boolean result = Utility.checkPermission(context);
+//
+//                if (items[item].equals("Take Photo")) {
+//                    userChoosenTask = "Take Photo";
+//                    if(result)
+//                        cameraIntent();
+//
+//                } else if (items[item].equals("Choose a photo from the gallery")) {
+//                    userChoosenTask ="Choose a photo from the gallery";
+//                    if(result)
+//                        galleryIntent();
+//
+//                } else if (items[item].equals("Cancel")) {
+//                    dialog.dismiss();
+//                }
+//            }
+//        });
+        ad.show();
+    }
+
     /**
      * Posting a new message in chat room
      * will make an http call to our server. Our server again sends the message
@@ -200,6 +272,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         long millSec = Calendar.getInstance().getTimeInMillis();
         this.inputMessage.setText("");
+        base64="";
         RequestParams params = new RequestParams();
         params.put("message", message);
         params.put("sentByAgent", false);
@@ -223,6 +296,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     Message message = new Message();
                     message.setId(userId);
                     message.setMessage(commentText);
+                    message.setMessageImg(commentText);
                     message.setCreatedAt(createdAt);
                     message.setUser(user);
                     messageArrayList.add(message);
@@ -271,11 +345,150 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case Utility.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if(userChoosenTask.equals("Take Photo"))
+                        cameraIntent();
+                    else if(userChoosenTask.equals("Choose from Library"))
+                        galleryIntent();
+                } else {
+                    //code for deny
+                }
+                break;
+        }
+    }
+
+    private void galleryIntent()
+    {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);//
+        startActivityForResult(Intent.createChooser(intent, "Select File"),SELECT_FILE);
+    }
+
+    private void cameraIntent() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(intent, REQUEST_CAMERA);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == SELECT_FILE)
+                onSelectFromGalleryResult(data);
+            else if (requestCode == REQUEST_CAMERA)
+                onCaptureImageResult(data);
+        }
+    }
+
+    private void onCaptureImageResult(Intent data) {
+        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
+
+        File destination = new File(Environment.getExternalStorageDirectory(),
+                System.currentTimeMillis() + ".jpg");
+
+        FileOutputStream fo;
+        try {
+            destination.createNewFile();
+            fo = new FileOutputStream(destination);
+            fo.write(bytes.toByteArray());
+            fo.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+//        ivImage.setImageBitmap(thumbnail);
+        base64 = bitmapToBase64(thumbnail);
+        Toast.makeText(context, ""+base64, Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, ""+thumbnail, Toast.LENGTH_LONG).show();
+    }
+
+    private String bitmapToBase64(Bitmap bitmap) {
+        byte[] byteArray = new byte[0];
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 65, byteArrayOutputStream);
+            byteArray = byteArrayOutputStream.toByteArray();
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return Base64.encodeToString(byteArray, Base64.NO_WRAP);
+    }
+
+    private Bitmap base64ToBitmap(String b64) {
+        byte[] imageAsBytes = Base64.decode(b64.getBytes(), Base64.DEFAULT);
+        return BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length);
+    }
+
+    @SuppressWarnings("deprecation")
+    private void onSelectFromGalleryResult(Intent data) {
+
+        Bitmap bm=null;
+        if (data != null) {
+            try {
+                bm = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+//        ivImage.setImageBitmap(bm);
+        base64 = bitmapToBase64(bm);
+        Toast.makeText(context, ""+base64, Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, ""+bm, Toast.LENGTH_LONG).show();
+    }
+
+
 
     /**
      * Fetching all the messages of a single chat room
      * */
     private void fetchChatThread() {
+        //api/support/supportChat/?uid=1535435396312
+        client.get(Backend.url+"/api/support/supportChat/?uid=1535453455607", new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                super.onSuccess(statusCode, headers, response);
+                for (int i=0; i<response.length(); i++){
+                    try {
+                        JSONObject object = response.getJSONObject(i);
+
+                        User user = new User("self", "pkyad", null);
+                        Message message = new Message();
+                        message.setId(object.getString("uid"));
+                        message.setMessage(object.getString("message"));
+                        message.setMessageImg(object.getString("attachment"));
+                        message.setCreatedAt(object.getString("created"));
+                        message.setUser(user);
+                        messageArrayList.add(message);
+
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                mAdapter.notifyDataSetChanged();
+                if (mAdapter.getItemCount() > 1) {
+                    recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONArray errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+            }
+        });
+
         for (int i = 0; i < 4; i++) {
 
             User user = new User("pradeeep", "pkyad", null);
@@ -289,16 +502,15 @@ public class ChatRoomActivity extends AppCompatActivity {
             messageArrayList.add(message);
         }
 
-        User user = new User("self", "pkyad", null);
+//        User user = new User("self", "pkyad", null);
+//
+//        Message message = new Message();
+//        message.setId("dsds");
+//        message.setMessage("sample messadsadasge " );
+//        message.setCreatedAt("12:89 am");
+//        message.setUser(user);
 
-        Message message = new Message();
-        message.setId("dsds");
-        message.setMessage("sample messadsadasge " );
-        message.setCreatedAt("12:89 am");
-        message.setUser(user);
-
-        messageArrayList.add(message);
-
+//        messageArrayList.add(message);
         mAdapter.notifyDataSetChanged();
         if (mAdapter.getItemCount() > 1) {
             recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
