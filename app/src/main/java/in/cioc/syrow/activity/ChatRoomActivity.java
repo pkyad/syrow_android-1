@@ -50,6 +50,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -68,15 +69,19 @@ import in.cioc.syrow.model.Message;
 import in.cioc.syrow.model.User;
 import io.crossbar.autobahn.wamp.Client;
 import io.crossbar.autobahn.wamp.Session;
+import io.crossbar.autobahn.wamp.messages.Publish;
 import io.crossbar.autobahn.wamp.types.EventDetails;
 import io.crossbar.autobahn.wamp.types.ExitInfo;
+import io.crossbar.autobahn.wamp.types.Publication;
 import io.crossbar.autobahn.wamp.types.SessionDetails;
 import io.crossbar.autobahn.wamp.types.Subscription;
 
 public class ChatRoomActivity extends AppCompatActivity {
 
     private String TAG = ChatRoomActivity.class.getSimpleName();
-
+    Session session;
+    Client client1;
+    CompletableFuture<ExitInfo> exitInfoCompletableFuture;
     private String chatRoomId;
     private RecyclerView recyclerView;
     private ChatRoomThreadAdapter mAdapter;
@@ -92,6 +97,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ImageView ivImage;
     String base64;
     private String userChoosenTask;
+    List<Object> args;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,17 +162,15 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         fetchChatThread();
 
-        Session session;
-        Client client;
-        CompletableFuture<ExitInfo> exitInfoCompletableFuture;
+
         session = new Session();
         session.addOnJoinListener(this::demonstrateSubscribe);
-        client = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
-        exitInfoCompletableFuture = client.connect();
+        client1 = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
+        exitInfoCompletableFuture = client1.connect();
     }
 
     public void demonstrateSubscribe(Session session, SessionDetails details) {
-        CompletableFuture<Subscription> subFuture = session.subscribe("service.self" ,
+        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.agent" ,
                 this::onEvent);
         subFuture.whenComplete((subscription, throwable) -> {
             if (throwable == null) {
@@ -180,7 +184,7 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     private void onEvent(List<Object> args, Map<String, Object> kwargs, EventDetails details) {
         System.out.println(String.format("Got event: %s", args.get(0)));
-
+        Toast.makeText(getApplicationContext(), "event "+args.get(0), Toast.LENGTH_SHORT).show();
 
         // add a notification strip here
 
@@ -282,7 +286,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject object) {
                 try {
-                    Toast.makeText(getApplicationContext(), "" + object.getString("message"), Toast.LENGTH_LONG).show();
+//                    Toast.makeText(getApplicationContext(), "" + object.getString("message"), Toast.LENGTH_LONG).show();
                     String commentId = object.getString("pk");
                     String commentText = object.getString("message");
                     String createdAt = object.getString("created");
@@ -300,6 +304,8 @@ public class ChatRoomActivity extends AppCompatActivity {
                     message.setCreatedAt(createdAt);
                     message.setUser(user);
                     messageArrayList.add(message);
+                    args = Arrays.asList(userId, "M", object);
+                    getPublish();
                     mAdapter.notifyDataSetChanged();
                     if (mAdapter.getItemCount() > 1) {
                         // scrolling to bottom of the recycler view
@@ -317,6 +323,8 @@ public class ChatRoomActivity extends AppCompatActivity {
 
             }
         });
+
+
 
         RequestParams threadParams = new RequestParams();
         threadParams.put("company", "1");
@@ -343,6 +351,26 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
             });
         }
+
+    }
+    public void getPublish() {
+        session = new Session();
+        session.addOnJoinListener(this::demonstratePublish);
+        client1 = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
+        exitInfoCompletableFuture = client1.connect();
+    }
+
+    public void demonstratePublish(Session session, SessionDetails details) {
+        // Publish to a topic that takes a single arguments
+//        List<Object> args = Arrays.asList("Hello World!", 900, "UNIQUE");
+        CompletableFuture<Publication> pubFuture = session.publish("service.support.agent", args);
+        pubFuture.thenAccept(publication -> System.out.println("Published successfully"));
+        Toast.makeText(getApplicationContext(), "Published successfully", Toast.LENGTH_SHORT).show();
+        // Shows we can separate out exception handling
+        pubFuture.exceptionally(throwable -> {
+            throwable.printStackTrace();
+            return null;
+        });
     }
 
     @Override
@@ -455,7 +483,7 @@ public class ChatRoomActivity extends AppCompatActivity {
      * */
     private void fetchChatThread() {
         //api/support/supportChat/?uid=1535435396312
-        client.get(Backend.url+"/api/support/supportChat/?uid=1535453455607", new JsonHttpResponseHandler(){
+        client.get(Backend.url+"/api/support/supportChat/?uid=1535521713227", new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
                 super.onSuccess(statusCode, headers, response);
@@ -469,6 +497,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                         message.setMessage(object.getString("message"));
                         message.setMessageImg(object.getString("attachment"));
                         message.setCreatedAt(object.getString("created"));
+                        message.setSentByAgent(object.getBoolean("sentByAgent"));
                         message.setUser(user);
                         messageArrayList.add(message);
 
@@ -489,18 +518,18 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
-        for (int i = 0; i < 4; i++) {
-
-            User user = new User("pradeeep", "pkyad", null);
-
-            Message message = new Message();
-            message.setId(Integer.toString(i) );
-            message.setMessage("sample message " +  Integer.toString(i) );
-            message.setCreatedAt("12:89 am");
-            message.setUser(user);
-
-            messageArrayList.add(message);
-        }
+//        for (int i = 0; i < 4; i++) {
+//
+//            User user = new User("pradeeep", "pkyad", null);
+//
+//            Message message = new Message();
+//            message.setId(Integer.toString(i) );
+//            message.setMessage("sample message " +  Integer.toString(i) );
+//            message.setCreatedAt("12:89 am");
+//            message.setUser(user);
+//
+//            messageArrayList.add(message);
+//        }
 
 //        User user = new User("self", "pkyad", null);
 //

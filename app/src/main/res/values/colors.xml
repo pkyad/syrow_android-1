@@ -5,4 +5,6 @@
     <color name="colorAccent">#EA80FC</color>
     <color name="list_divider">#dedede</color>
     <color name="bg_bubble_self">#E1E1E1</color>
+
+    <color name="black_overlay">#66000000</color>
 </resources>

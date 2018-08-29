@@ -20,8 +20,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 import in.cioc.syrow.R;
+import in.cioc.syrow.activity.FullscreenActivity;
+import in.cioc.syrow.activity.ViewPagerActivity;
 import in.cioc.syrow.model.Message;
 
 public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAdapter.ViewHolder> {
@@ -80,6 +83,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Message message = messageArrayList.get(position);
+        int imagePosition = 0;
         if (message.getMessage().equals("")||message.getMessage().equals("null")||message.getMessage()==null){
             if (!(message.getMessageImg().equals("")||message.getMessageImg().equals("null")||message.getMessageImg()==null)) {
                 holder.message.setVisibility(View.GONE);
@@ -92,7 +96,10 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                 holder.messageImage.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Toast.makeText(mContext, "just wait...", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(mContext, ViewPagerActivity.class);
+                        intent.putExtra("position", imagePosition);
+                        intent.putExtra("imageUrl", message.getMessageImg());
+                        mContext.startActivity(intent);
                     }
                 });
             }
@@ -101,18 +108,30 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
             holder.message.setVisibility(View.VISIBLE);
             ((ViewHolder) holder).message.setText(message.getMessage());
         }
-        String timestamp = getTimeStamp(message.getCreatedAt());
 
-        if (message.getCreatedAt() != null)
-            timestamp = message.getCreatedAt() + ". " + timestamp;
+        String timestamp = "";//getTimeStamp(message.getCreatedAt());
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault());
+        SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
 
-        ((ViewHolder) holder).timestamp.setText(timestamp);
+        Date date2 = null;
+        try {
+            date2 = inputFormat.parse(message.getCreatedAt());
+            timestamp = outputFormat.format(date2);
+
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        if (message.getCreatedAt() != null) {
+//            if (timestamp.equals("12:00"))
+            timestamp = timestamp + ". ";
+        }
+        holder.timestamp.setText(timestamp);
     }
 
     @Override
     public int getItemViewType(int position) {
         Message message = messageArrayList.get(position);
-        if (message.getUser().getId().equals(userId)) {
+        if (message.isSentByAgent()) {
             return SELF;
         }
         return position;
@@ -124,21 +143,31 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     }
 
     public static String getTimeStamp(String dateStr) {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
+
+        Date date2 = null;
         String timestamp = "";
-
-        today = today.length() < 2 ? "0" + today : today;
-
         try {
-            Date date = format.parse(dateStr);
-            SimpleDateFormat todayFormat = new SimpleDateFormat("dd");
-            String dateToday = todayFormat.format(date);
-            format = dateToday.equals(today) ? new SimpleDateFormat("hh:mm a") : new SimpleDateFormat("dd LLL, hh:mm a");
-            String date1 = format.format(date);
-            timestamp = date1.toString();
+            date2 = inputFormat.parse(dateStr);
+            timestamp = outputFormat.format(date2);
+
         } catch (ParseException e) {
             e.printStackTrace();
         }
+//        today = today.length() < 2 ? "0" + today : today;
+//
+//        try {
+//            Date date = format.parse(dateStr);
+//            SimpleDateFormat todayFormat = new SimpleDateFormat("dd");
+//            String dateToday = todayFormat.format(date);
+//            format = dateToday.equals(today) ? new SimpleDateFormat("hh:mm a") : new SimpleDateFormat("dd LLL, hh:mm a");
+//            String date1 = format.format(date);
+//            timestamp = date1.toString();
+//        } catch (ParseException e) {
+//            e.printStackTrace();
+//        }
         return timestamp;
     }
 }

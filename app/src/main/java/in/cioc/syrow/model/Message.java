@@ -7,6 +7,7 @@ import java.io.Serializable;
  */
 public class Message implements Serializable {
     String id, message, messageImg, createdAt;
+    boolean sentByAgent;
     User user;
 
     public Message() {
@@ -50,6 +51,14 @@ public class Message implements Serializable {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public boolean isSentByAgent() {
+        return sentByAgent;
+    }
+
+    public void setSentByAgent(boolean sentByAgent) {
+        this.sentByAgent = sentByAgent;
     }
 
     public User getUser() {
