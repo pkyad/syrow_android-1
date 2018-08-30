@@ -3,7 +3,6 @@ package in.cioc.syrow.activity;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -17,26 +16,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.android.volley.DefaultRetryPolicy;
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
 import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
@@ -62,7 +50,6 @@ import in.cioc.syrow.Backend;
 import in.cioc.syrow.R;
 import in.cioc.syrow.adapter.ChatRoomThreadAdapter;
 import in.cioc.syrow.app.Config;
-import in.cioc.syrow.app.MyApplication;
 import in.cioc.syrow.helper.Utility;
 import in.cioc.syrow.model.ChatThread;
 import in.cioc.syrow.model.Message;
@@ -354,10 +341,10 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     }
     public void getPublish() {
-        session = new Session();
+        Session session = new Session();
         session.addOnJoinListener(this::demonstratePublish);
-        client1 = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
-        exitInfoCompletableFuture = client1.connect();
+        Client client = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
+        exitInfoCompletableFuture = client.connect();
     }
 
     public void demonstratePublish(Session session, SessionDetails details) {

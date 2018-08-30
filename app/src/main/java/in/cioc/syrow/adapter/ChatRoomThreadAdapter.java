@@ -2,8 +2,6 @@ package in.cioc.syrow.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -21,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import in.cioc.syrow.R;
 import in.cioc.syrow.activity.FullscreenActivity;
@@ -63,20 +62,17 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemView;
-
         // view type is to identify where to render the chat message
         // left or right
         if (viewType == SELF) {
             // self message
             itemView = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.chat_item_self, parent, false);
+                    .inflate(R.layout.chat_item_other, parent, false);
         } else {
             // others message
             itemView = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.chat_item_other, parent, false);
+                    .inflate(R.layout.chat_item_self, parent, false);
         }
-
-
         return new ViewHolder(itemView);
     }
 
@@ -110,9 +106,10 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         }
 
         String timestamp = "";//getTimeStamp(message.getCreatedAt());
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault());
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
         SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
-
+        inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
+        outputFormat.setTimeZone(TimeZone.getDefault());
         Date date2 = null;
         try {
             date2 = inputFormat.parse(message.getCreatedAt());
@@ -146,6 +143,8 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
 //        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
+        inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
+//        outputFormat.setTimeZone(TimeZone.getDefault());
 
         Date date2 = null;
         String timestamp = "";

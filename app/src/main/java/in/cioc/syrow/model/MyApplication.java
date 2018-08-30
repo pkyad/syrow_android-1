@@ -1,4 +1,4 @@
-package in.cioc.syrow.app;
+package in.cioc.syrow.model;
 
 /**
  * Created by Lincoln on 14/10/15.
@@ -47,7 +47,6 @@ public class MyApplication extends Application {
         if (mRequestQueue == null) {
             mRequestQueue = Volley.newRequestQueue(getApplicationContext());
         }
-
         return mRequestQueue;
     }
 
@@ -55,10 +54,8 @@ public class MyApplication extends Application {
         if (pref == null) {
             pref = new MyPreferenceManager(this);
         }
-
         return pref;
     }
-
 
     public <T> void addToRequestQueue(Request<T> req) {
         req.setTag(TAG);

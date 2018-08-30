@@ -28,7 +28,7 @@
     <ImageView
         android:id="@+id/message_image"
         android:layout_width="150dp"
-        android:layout_height="120dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:padding="5dp"
         android:textIsSelectable="true"
