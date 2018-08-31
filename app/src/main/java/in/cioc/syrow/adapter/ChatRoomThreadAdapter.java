@@ -111,36 +111,39 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
         outputFormat.setTimeZone(TimeZone.getDefault());
         Date date = null;
-        int hours, minute;
         String format;
         try {
             date = inputFormat.parse(message.getCreated());
             int hourOfDay = date.getHours();
-//            Toast.makeText(mContext, "Time : "+date.getHours()+date.getMinutes(), Toast.LENGTH_SHORT).show();
             if (hourOfDay == 0) {
                 hourOfDay += 12;
-                format = "AM";
+                format = " AM";
             } else if (hourOfDay == 12) {
-                format = "PM";
+                format = " PM";
             } else if (hourOfDay > 12) {
                 hourOfDay -= 12;
-                format = "PM";
+                format = " PM";
             } else {
-                format = "AM";
+                format = " AM";
             }
-            if (date.getHours()>12) {
-                timestamp = date.getHours()+":"+date.getMinutes()+" PM";
-            } else if (date.getHours()<=12) {
-                timestamp = date.getHours()+":"+date.getMinutes()+" AM";
-            }
+            if (String.valueOf(hourOfDay).length()==1 && String.valueOf(date.getMinutes()).length()==1)
+                timestamp = "0"+hourOfDay + ":0"+ date.getMinutes() + format;
+            else  if (String.valueOf(hourOfDay).length()==1||String.valueOf(date.getMinutes()).length()==1)
+                if (String.valueOf(hourOfDay).length()==1)
+                    timestamp = "0"+hourOfDay + ":" + date.getMinutes() + format;
+            if (String.valueOf(date.getMinutes()).length()==1)
+                timestamp = hourOfDay + ":0" + date.getMinutes() + format;
+            else
+                timestamp = hourOfDay + ":" + date.getMinutes() + format;
         } catch (ParseException e) {
             e.printStackTrace();
         }
         if (message.getCreated() != null) {
-//            if (timestamp.equals("12:00"))
-            timestamp = timestamp + ". ";
+            holder.timestamp.setText(timestamp);
+        } else {
+            holder.timestamp.setText(timestamp);
         }
-        holder.timestamp.setText(timestamp);
+
     }
 
     @Override
@@ -158,12 +161,9 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     }
 
     public static String getTimeStamp(String dateStr) {
-//        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
         inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
-//        outputFormat.setTimeZone(TimeZone.getDefault());
-
         Date date2 = null;
         String timestamp = "";
         try {
@@ -173,18 +173,6 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         } catch (ParseException e) {
             e.printStackTrace();
         }
-//        today = today.length() < 2 ? "0" + today : today;
-//
-//        try {
-//            Date date = format.parse(dateStr);
-//            SimpleDateFormat todayFormat = new SimpleDateFormat("dd");
-//            String dateToday = todayFormat.format(date);
-//            format = dateToday.equals(today) ? new SimpleDateFormat("hh:mm a") : new SimpleDateFormat("dd LLL, hh:mm a");
-//            String date1 = format.format(date);
-//            timestamp = date1.toString();
-//        } catch (ParseException e) {
-//            e.printStackTrace();
-//        }
         return timestamp;
     }
 }

@@ -18,6 +18,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,6 +33,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -85,11 +87,11 @@ public class ChatRoomActivity extends AppCompatActivity {
     boolean thread = true;
     Context context;
     private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
-    private Button btnSelect;
-    private ImageView ivImage;
-    String base64;
-    private String userChoosenTask;
-    List<Object> args;
+    String base64="";
+    Bitmap bitmap;
+    String path;
+    int choose;
+    private String userChooseTask;
     long millSec = Calendar.getInstance().getTimeInMillis();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,7 +99,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat_room);
         this.context = ChatRoomActivity.this;
         client = new AsyncHttpClient();
-
+        choose=1;
         inputMessage = findViewById(R.id.message);
         btnSend = findViewById(R.id.btn_send);
         btnAttach = findViewById(R.id.btn_attach);
@@ -139,7 +141,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendMessage();
+                sendMessage("");
             }
         });
 
@@ -235,21 +237,35 @@ public class ChatRoomActivity extends AppCompatActivity {
      * to all the devices as push notification
      * */
 
-    private void sendMessage() {
+    private void sendMessage(String msg) {
         final String message = this.inputMessage.getText().toString().trim();
-        if (TextUtils.isEmpty(message)) {
-            Toast.makeText(getApplicationContext(), "Enter a message", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-
         this.inputMessage.setText("");
-        base64="";
         RequestParams params = new RequestParams();
-        params.put("message", message);
-        params.put("sentByAgent", false);
-        params.put("uid", millSec);
-
+        if (msg.equals("")) {
+            if (TextUtils.isEmpty(message)) {
+                Toast.makeText(getApplicationContext(), "Enter a message", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            params.put("message", message);
+            params.put("sentByAgent", false);
+            params.put("uid", millSec);
+//            params.put("user", "");
+        } else {
+            if (bitmap!=null) {
+//            try {
+                ByteArrayOutputStream output = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
+                byte[] image = output.toByteArray();
+                params.put("attachment", new ByteArrayInputStream(image), msg + ".jpeg");
+                params.put("sentByAgent", false);
+                params.put("attachmentType", "Image");
+                params.put("uid", millSec);
+//                params.put("user", "");
+//            } catch (FileNotFoundException e) {
+//                e.printStackTrace();
+//            }
+            }
+        }
         client.post(Backend.url+"/api/support/supportChat/", params, new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject object) {
@@ -265,9 +281,9 @@ public class ChatRoomActivity extends AppCompatActivity {
                     message.setCreated(object.getString("created"));
                     message.setAttachmentType(object.getString("attachmentType"));
                     messageArrayList.add(message);
-//                    List<Object> args = Arrays.asList(userId, "M", message);
-                    session.publish("service.support.agent", userId, "M", message);
-
+                    if (!(message.getMessage().equals("null")))
+                        session.publish("service.support.agent", userId, "M", message);
+                    else session.publish("service.support.agent", userId, "MF", message);
                     mAdapter.notifyDataSetChanged();
                     if (mAdapter.getItemCount() > 1) {
                         // scrolling to bottom of the recycler view
@@ -293,7 +309,6 @@ public class ChatRoomActivity extends AppCompatActivity {
             client.post(Backend.url+"/api/support/chatThread/", threadParams, new JsonHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                    Toast.makeText(ChatRoomActivity.this, "success "+thread, Toast.LENGTH_SHORT).show();
                     super.onSuccess(statusCode, headers, response);
                     thread = false;
                     try {
@@ -301,7 +316,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
@@ -310,18 +324,16 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
             });
         }
-
     }
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
             case Utility.MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    if(userChoosenTask.equals("Take Photo"))
+                    if(userChooseTask.equals("Take Photo"))
                         cameraIntent();
-                    else if(userChoosenTask.equals("Choose from Library"))
+                    else if(userChooseTask.equals("Choose from Library"))
                         galleryIntent();
                 } else {
                     //code for deny
@@ -330,8 +342,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
     }
 
-    private void galleryIntent()
-    {
+    private void galleryIntent() {
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);//
@@ -356,9 +367,9 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void onCaptureImageResult(Intent data) {
-        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
+        bitmap = (Bitmap) data.getExtras().get("data");
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
 
         File destination = new File(Environment.getExternalStorageDirectory(),
                 System.currentTimeMillis() + ".jpg");
@@ -376,9 +387,11 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
 
 //        ivImage.setImageBitmap(thumbnail);
-        base64 = bitmapToBase64(thumbnail);
-        Toast.makeText(context, ""+base64, Toast.LENGTH_SHORT).show();
-        Toast.makeText(context, ""+thumbnail, Toast.LENGTH_LONG).show();
+        sendMessage(destination.getAbsolutePath());
+
+        base64 = bitmapToBase64(bitmap);
+        Toast.makeText(context, ""+destination.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+        Log.e("onCaptureImageResult",""+destination.getAbsolutePath());
     }
 
     private String bitmapToBase64(Bitmap bitmap) {
@@ -401,20 +414,19 @@ public class ChatRoomActivity extends AppCompatActivity {
 
     @SuppressWarnings("deprecation")
     private void onSelectFromGalleryResult(Intent data) {
-
-        Bitmap bm=null;
         if (data != null) {
+            path = data.getData().getPath();
             try {
-                bm = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
+                bitmap = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), data.getData());
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            Log.e("onSelectFromGalleryResult",""+path);
+            Toast.makeText(context, ""+path, Toast.LENGTH_SHORT).show();
         }
-
 //        ivImage.setImageBitmap(bm);
-        base64 = bitmapToBase64(bm);
-        Toast.makeText(context, ""+base64, Toast.LENGTH_SHORT).show();
-        Toast.makeText(context, ""+bm, Toast.LENGTH_LONG).show();
+        base64 = bitmapToBase64(bitmap);
+        sendMessage(path);
     }
 
 
@@ -431,7 +443,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                 for (int i=0; i<response.length(); i++){
                     try {
                         JSONObject object = response.getJSONObject(i);
-
                         User user = new User("self", "pkyad", null);
                         Message message = new Message();
                         message.setPk(object.getString("pk"));
