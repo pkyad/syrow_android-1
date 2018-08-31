@@ -85,7 +85,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     String base64;
     private String userChoosenTask;
     List<Object> args;
-
+    long millSec = Calendar.getInstance().getTimeInMillis();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,8 +148,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
 
         fetchChatThread();
-
-
         session = new Session();
         session.addOnJoinListener(this::demonstrateSubscribe);
         client1 = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
@@ -157,7 +155,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     public void demonstrateSubscribe(Session session, SessionDetails details) {
-        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.agent" ,
+        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.chat." ,
                 this::onEvent);
         subFuture.whenComplete((subscription, throwable) -> {
             if (throwable == null) {
@@ -226,26 +224,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                 ad.dismiss();
             }
         });
-//        builder.setItems(items, new DialogInterface.OnClickListener() {
-//            @Override
-//            public void onClick(DialogInterface dialog, int item) {
-//                boolean result = Utility.checkPermission(context);
-//
-//                if (items[item].equals("Take Photo")) {
-//                    userChoosenTask = "Take Photo";
-//                    if(result)
-//                        cameraIntent();
-//
-//                } else if (items[item].equals("Choose a photo from the gallery")) {
-//                    userChoosenTask ="Choose a photo from the gallery";
-//                    if(result)
-//                        galleryIntent();
-//
-//                } else if (items[item].equals("Cancel")) {
-//                    dialog.dismiss();
-//                }
-//            }
-//        });
         ad.show();
     }
 
@@ -261,13 +239,13 @@ public class ChatRoomActivity extends AppCompatActivity {
             return;
         }
 
-        long millSec = Calendar.getInstance().getTimeInMillis();
+
         this.inputMessage.setText("");
         base64="";
         RequestParams params = new RequestParams();
         params.put("message", message);
         params.put("sentByAgent", false);
-        params.put("uid", millSec);
+        params.put("uid", "1535521713227");
 
         client.post(Backend.url+"/api/support/supportChat/", params, new JsonHttpResponseHandler(){
             @Override
@@ -292,7 +270,18 @@ public class ChatRoomActivity extends AppCompatActivity {
                     message.setUser(user);
                     messageArrayList.add(message);
                     args = Arrays.asList(userId, "M", object);
-                    getPublish();
+
+
+                    CompletableFuture<Publication> pubFuture = session.publish("service.support.agent", args);
+                    pubFuture.thenAccept(publication -> System.out.println("Published successfully"));
+                    Toast.makeText(getApplicationContext(), "Published successfully", Toast.LENGTH_SHORT).show();
+                    // Shows we can separate out exception handling
+                    pubFuture.exceptionally(throwable -> {
+                        throwable.printStackTrace();
+                        return null;
+                    });
+
+
                     mAdapter.notifyDataSetChanged();
                     if (mAdapter.getItemCount() > 1) {
                         // scrolling to bottom of the recycler view
@@ -340,25 +329,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         }
 
     }
-    public void getPublish() {
-        Session session = new Session();
-        session.addOnJoinListener(this::demonstratePublish);
-        Client client = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
-        exitInfoCompletableFuture = client.connect();
-    }
 
-    public void demonstratePublish(Session session, SessionDetails details) {
-        // Publish to a topic that takes a single arguments
-//        List<Object> args = Arrays.asList("Hello World!", 900, "UNIQUE");
-        CompletableFuture<Publication> pubFuture = session.publish("service.support.agent", args);
-        pubFuture.thenAccept(publication -> System.out.println("Published successfully"));
-        Toast.makeText(getApplicationContext(), "Published successfully", Toast.LENGTH_SHORT).show();
-        // Shows we can separate out exception handling
-        pubFuture.exceptionally(throwable -> {
-            throwable.printStackTrace();
-            return null;
-        });
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {

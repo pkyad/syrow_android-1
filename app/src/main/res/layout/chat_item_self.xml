@@ -22,18 +22,20 @@
         android:layout_alignParentRight="true"
         android:textIsSelectable="true"
         android:text="Hii"
-        android:background="@drawable/bg_bubble_gray"
+        android:padding="10dp"
+        android:elevation="2dp"
+        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+        android:background="@drawable/chat_bubble_self"
         android:textSize="14dp" />
 
     <ImageView
         android:id="@+id/message_image"
-        android:layout_width="150dp"
+        android:layout_width="180dp"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
-        android:padding="5dp"
+        android:padding="10dp"
         android:textIsSelectable="true"
-        android:background="@drawable/bg_bubble_gray"
-        android:textSize="14dp"
+        android:background="@drawable/chat_bubble_self"
         android:visibility="visible"/>
     </RelativeLayout>
     <TextView

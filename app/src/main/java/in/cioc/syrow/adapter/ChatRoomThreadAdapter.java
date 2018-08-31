@@ -110,11 +110,29 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
         inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
         outputFormat.setTimeZone(TimeZone.getDefault());
-        Date date2 = null;
+        Date date = null;
+        int hours, minute;
+        String format;
         try {
-            date2 = inputFormat.parse(message.getCreatedAt());
-            timestamp = outputFormat.format(date2);
-
+            date = inputFormat.parse(message.getCreatedAt());
+            int hourOfDay = date.getHours();
+//            Toast.makeText(mContext, "Time : "+date.getHours()+date.getMinutes(), Toast.LENGTH_SHORT).show();
+            if (hourOfDay == 0) {
+                hourOfDay += 12;
+                format = "AM";
+            } else if (hourOfDay == 12) {
+                format = "PM";
+            } else if (hourOfDay > 12) {
+                hourOfDay -= 12;
+                format = "PM";
+            } else {
+                format = "AM";
+            }
+            if (date.getHours()>12) {
+                timestamp = date.getHours()+":"+date.getMinutes()+" PM";
+            } else if (date.getHours()<=12) {
+                timestamp = date.getHours()+":"+date.getMinutes()+" AM";
+            }
         } catch (ParseException e) {
             e.printStackTrace();
         }
