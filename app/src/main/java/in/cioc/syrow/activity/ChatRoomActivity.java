@@ -274,7 +274,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                     Message message = new Message();
                     message.setPk(object.getString("pk"));
                     message.setUid(object.getString("uid"));
-                    message.setUser(object.getString("user"));
+//                    message.setUser(object.getString("user"));
                     message.setSentByAgent(object.getBoolean("sentByAgent"));
                     message.setMessage(object.getString("message"));
                     message.setAttachment(object.getString("attachment"));

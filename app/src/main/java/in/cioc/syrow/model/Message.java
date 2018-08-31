@@ -61,6 +61,10 @@ public class Message implements Serializable {
         this.attachmentType = attachmentType;
     }
 
+    public String getUser() {
+        return user;
+    }
+
     public void setUser(String user) {
         this.user = user;
     }
