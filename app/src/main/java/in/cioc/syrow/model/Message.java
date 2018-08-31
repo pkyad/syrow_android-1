@@ -6,27 +6,43 @@ import java.io.Serializable;
  * Created by Lincoln on 07/01/16.
  */
 public class Message implements Serializable {
-    String id, message, messageImg, createdAt;
-    boolean sentByAgent;
-    User user;
+    public String pk, created, uid, attachment, message, attachmentType, user;
+    public boolean sentByAgent;
+//    User user;
 
     public Message() {
     }
 
-    public Message(String id, String message, String messageImage, String createdAt, User user) {
-        this.id = id;
-        this.message = message;
-        this.messageImg = messageImage;
-        this.createdAt = createdAt;
-        this.user = user;
+    public String getPk() {
+        return pk;
     }
 
-    public String getId() {
-        return id;
+    public void setPk(String pk) {
+        this.pk = pk;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public String getCreated() {
+        return created;
+    }
+
+    public void setCreated(String created) {
+        this.created = created;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getAttachment() {
+        return attachment;
+    }
+
+    public void setAttachment(String attachment) {
+        this.attachment = attachment;
     }
 
     public String getMessage() {
@@ -37,20 +53,16 @@ public class Message implements Serializable {
         this.message = message;
     }
 
-    public String getMessageImg() {
-        return messageImg;
+    public String getAttachmentType() {
+        return attachmentType;
     }
 
-    public void setMessageImg(String messageImg) {
-        this.messageImg = messageImg;
+    public void setAttachmentType(String attachmentType) {
+        this.attachmentType = attachmentType;
     }
 
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
+    public void setUser(String user) {
+        this.user = user;
     }
 
     public boolean isSentByAgent() {
@@ -61,11 +73,11 @@ public class Message implements Serializable {
         this.sentByAgent = sentByAgent;
     }
 
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
+//    public User getUser() {
+//        return user;
+//    }
+//
+//    public void setUser(User user) {
+//        this.user = user;
+//    }
 }

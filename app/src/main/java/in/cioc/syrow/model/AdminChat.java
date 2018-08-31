@@ -1,5 +1,6 @@
 package in.cioc.syrow.model;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class AdminChat {
@@ -7,8 +8,18 @@ public class AdminChat {
     public boolean sentByAgent;
     public JSONObject object;
 
-    public AdminChat(JSONObject object) {
+    public AdminChat(JSONObject object) throws JSONException {
         this.object = object;
+        this.pk = object.getString("pk");
+        this.message = object.getString("message");
+        this.created = object.getString("created");
+        this.uid = object.getString("uid");
+        this.user = object.getString("user");
+        this.attachment = object.getString("attachment");
+        this.attachmentType = object.getString("attachmentType");
+        this.sentByAgent = object.getBoolean("sentByAgent");
+
+
     }
 
     public String getPk() {

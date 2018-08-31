@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -46,11 +47,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.StringEntity;
+import cz.msebera.android.httpclient.message.BasicHeader;
+import cz.msebera.android.httpclient.protocol.HTTP;
 import in.cioc.syrow.Backend;
 import in.cioc.syrow.R;
 import in.cioc.syrow.adapter.ChatRoomThreadAdapter;
 import in.cioc.syrow.app.Config;
 import in.cioc.syrow.helper.Utility;
+import in.cioc.syrow.model.AdminChat;
 import in.cioc.syrow.model.ChatThread;
 import in.cioc.syrow.model.Message;
 import in.cioc.syrow.model.User;
@@ -108,9 +113,7 @@ public class ChatRoomActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(), "Chat room not found!", Toast.LENGTH_SHORT).show();
             //finish();
         }
-
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-
         messageArrayList = new ArrayList<>();
 
         // self user id is to identify the message owner
@@ -155,7 +158,7 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     public void demonstrateSubscribe(Session session, SessionDetails details) {
-        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.chat." ,
+        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.chat" ,
                 this::onEvent);
         subFuture.whenComplete((subscription, throwable) -> {
             if (throwable == null) {
@@ -206,7 +209,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         ImageView btnCamera = v.findViewById(R.id.btn_camera);
         ImageView btnGallery = v.findViewById(R.id.btn_gallery);
 
-
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setView(v);
         AlertDialog ad = builder.create();
@@ -232,6 +234,7 @@ public class ChatRoomActivity extends AppCompatActivity {
      * will make an http call to our server. Our server again sends the message
      * to all the devices as push notification
      * */
+
     private void sendMessage() {
         final String message = this.inputMessage.getText().toString().trim();
         if (TextUtils.isEmpty(message)) {
@@ -245,42 +248,25 @@ public class ChatRoomActivity extends AppCompatActivity {
         RequestParams params = new RequestParams();
         params.put("message", message);
         params.put("sentByAgent", false);
-        params.put("uid", "1535521713227");
+        params.put("uid", millSec);
 
         client.post(Backend.url+"/api/support/supportChat/", params, new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject object) {
                 try {
-//                    Toast.makeText(getApplicationContext(), "" + object.getString("message"), Toast.LENGTH_LONG).show();
-                    String commentId = object.getString("pk");
-                    String commentText = object.getString("message");
-                    String createdAt = object.getString("created");
                     String userId = object.getString("uid");
-                    String userName = object.getString("user");
-                    String attachment = object.getString("attachment");
-                    String attachmentType = object.getString("attachmentType");
-                    Boolean sentByAgent = object.getBoolean("sentByAgent");
-                    User user = new User(userId, userName, null);
-
                     Message message = new Message();
-                    message.setId(userId);
-                    message.setMessage(commentText);
-                    message.setMessageImg(commentText);
-                    message.setCreatedAt(createdAt);
-                    message.setUser(user);
+                    message.setPk(object.getString("pk"));
+                    message.setUid(object.getString("uid"));
+                    message.setUser(object.getString("user"));
+                    message.setSentByAgent(object.getBoolean("sentByAgent"));
+                    message.setMessage(object.getString("message"));
+                    message.setAttachment(object.getString("attachment"));
+                    message.setCreated(object.getString("created"));
+                    message.setAttachmentType(object.getString("attachmentType"));
                     messageArrayList.add(message);
-                    args = Arrays.asList(userId, "M", object);
-
-
-                    CompletableFuture<Publication> pubFuture = session.publish("service.support.agent", args);
-                    pubFuture.thenAccept(publication -> System.out.println("Published successfully"));
-                    Toast.makeText(getApplicationContext(), "Published successfully", Toast.LENGTH_SHORT).show();
-                    // Shows we can separate out exception handling
-                    pubFuture.exceptionally(throwable -> {
-                        throwable.printStackTrace();
-                        return null;
-                    });
-
+//                    List<Object> args = Arrays.asList(userId, "M", message);
+                    session.publish("service.support.agent", userId, "M", message);
 
                     mAdapter.notifyDataSetChanged();
                     if (mAdapter.getItemCount() > 1) {
@@ -300,8 +286,6 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
-
-
         RequestParams threadParams = new RequestParams();
         threadParams.put("company", "1");
         threadParams.put("uid",millSec);
@@ -319,7 +303,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                     }
 
                 }
-
                 @Override
                 public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
                     super.onFailure(statusCode, headers, throwable, errorResponse);
@@ -451,12 +434,13 @@ public class ChatRoomActivity extends AppCompatActivity {
 
                         User user = new User("self", "pkyad", null);
                         Message message = new Message();
-                        message.setId(object.getString("uid"));
-                        message.setMessage(object.getString("message"));
-                        message.setMessageImg(object.getString("attachment"));
-                        message.setCreatedAt(object.getString("created"));
+                        message.setPk(object.getString("pk"));
+                        message.setUser(object.getString("user"));
                         message.setSentByAgent(object.getBoolean("sentByAgent"));
-                        message.setUser(user);
+                        message.setMessage(object.getString("message"));
+                        message.setAttachment(object.getString("attachment"));
+                        message.setCreated(object.getString("created"));
+                        message.setAttachmentType(object.getString("attachmentType"));
                         messageArrayList.add(message);
 
 

@@ -81,20 +81,20 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         Message message = messageArrayList.get(position);
         int imagePosition = 0;
         if (message.getMessage().equals("")||message.getMessage().equals("null")||message.getMessage()==null){
-            if (!(message.getMessageImg().equals("")||message.getMessageImg().equals("null")||message.getMessageImg()==null)) {
+            if (!(message.getAttachment().equals("")||message.getAttachment().equals("null")||message.getAttachment()==null)) {
                 holder.message.setVisibility(View.GONE);
                 holder.messageImage.setVisibility(View.VISIBLE);
 //                Uri uri = Uri.parse(message.getMessageImg());
 //                holder.messageImage.setImageURI(uri);
                 Glide.with(mContext)
-                        .load(message.getMessageImg())
+                        .load(message.getAttachment())
                         .into(holder.messageImage);
                 holder.messageImage.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         Intent intent = new Intent(mContext, ViewPagerActivity.class);
                         intent.putExtra("position", imagePosition);
-                        intent.putExtra("imageUrl", message.getMessageImg());
+                        intent.putExtra("imageUrl", message.getAttachment());
                         mContext.startActivity(intent);
                     }
                 });
@@ -114,7 +114,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         int hours, minute;
         String format;
         try {
-            date = inputFormat.parse(message.getCreatedAt());
+            date = inputFormat.parse(message.getCreated());
             int hourOfDay = date.getHours();
 //            Toast.makeText(mContext, "Time : "+date.getHours()+date.getMinutes(), Toast.LENGTH_SHORT).show();
             if (hourOfDay == 0) {
@@ -136,7 +136,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        if (message.getCreatedAt() != null) {
+        if (message.getCreated() != null) {
 //            if (timestamp.equals("12:00"))
             timestamp = timestamp + ". ";
         }
