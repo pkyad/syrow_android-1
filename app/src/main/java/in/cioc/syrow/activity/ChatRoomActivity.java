@@ -603,9 +603,6 @@ public class ChatRoomActivity extends AppCompatActivity {
 //​​
 //                    user: 1
 //​​
-
-
-
                     mAdapter.notifyDataSetChanged();
                     if (mAdapter.getItemCount() > 1) {
                         // scrolling to bottom of the recycler view
@@ -792,29 +789,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                 super.onFailure(statusCode, headers, throwable, errorResponse);
             }
         });
-
-//        for (int i = 0; i < 4; i++) {
-//
-//            User user = new User("pradeeep", "pkyad", null);
-//
-//            Message message = new Message();
-//            message.setId(Integer.toString(i) );
-//            message.setMessage("sample message " +  Integer.toString(i) );
-//            message.setCreatedAt("12:89 am");
-//            message.setUser(user);
-//
-//            messageArrayList.add(message);
-//        }
-
-//        User user = new User("self", "pkyad", null);
-//
-//        Message message = new Message();
-//        message.setId("dsds");
-//        message.setMessage("sample messadsadasge " );
-//        message.setCreatedAt("12:89 am");
-//        message.setUser(user);
-
-//        messageArrayList.add(message);
         mAdapter.notifyDataSetChanged();
         if (mAdapter.getItemCount() > 1) {
             recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);

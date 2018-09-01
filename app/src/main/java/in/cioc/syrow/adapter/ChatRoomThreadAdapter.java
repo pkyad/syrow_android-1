@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -25,11 +24,9 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.TimeZone;
 
 import in.cioc.syrow.R;
-import in.cioc.syrow.activity.FullscreenActivity;
 import in.cioc.syrow.activity.ViewPagerActivity;
 import in.cioc.syrow.model.Message;
 
@@ -112,21 +109,18 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                 if((message.getAttachmentType().equals("youtubeLink"))){
                     holder.message.setVisibility(View.GONE);
                     holder.messageImage.setVisibility(View.VISIBLE);
-//                    String[] id = message.getMessage().split("https://www.youtube.com/embed/");
-                    List<String> strings = Arrays.asList(message.getMessage().split("/"));
-                    String id = strings.set(strings.size() - 1,"");
-//                    if(message.getMessage().split("/") != null && message.getMessage().split("/").length > 0) {
-//                        id = message.getMessage().split("/")[message.getMessage().split("/").length - 1];
-//                    }
+                    String[] id = message.getMessage().split("https://www.youtube.com/embed/");
+//                    int index = message.getMessage().lastIndexOf('/');
+//                    String id = message.getMessage().substring(index +1);
                     Glide.with(mContext)
-                            .load("https://img.youtube.com/vi/"+id+"/0.jpg")
+                            .load("https://img.youtube.com/vi/"+id[1]+"/0.jpg")
                             .into(holder.messageImage);
                     holder.messageImage.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + id));
+                            Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + id[1]));
                             Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                                    Uri.parse("http://www.youtube.com/watch?v=" + id));
+                                    Uri.parse("http://www.youtube.com/watch?v=" + id[1]));
                             try {
                                 mContext.startActivity(appIntent);
                             } catch (ActivityNotFoundException ex) {
@@ -158,7 +152,6 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
             Date date = null;
             String format;
             try {
-
                 try{
                     date = inputFormat.parse(message.getCreated());
                 }catch (Exception e){
