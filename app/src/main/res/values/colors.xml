@@ -1,10 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#033d6c</color>
-    <color name="colorPrimaryDark">#143170</color>
+    <color name="colorPrimary">#213858</color>
+    <color name="colorPrimaryDark">#162c48</color>
     <color name="colorAccent">#8095fc</color>
     <color name="list_divider">#dedede</color>
     <color name="bg_bubble_self">#E1E1E1</color>
 
     <color name="black_overlay">#66000000</color>
+
+    <color name="gen_black">#000000</color>
+    <color name="gen_white">#FFFFFF</color>
+    <color name="green_light">#43A047</color>
+    <color name="grey_light">#E0E0E0</color>
+    <color name="grey_dark">#a3a2a2</color>
+    <color name="grey_dark1">#696969</color>
+    <color name="alabaster">#f2f0e6</color>
+    <color name="orange_light">#f2563e</color>
+    <color name="red_light">#e11212</color>
+    <color name="text_red">#ec6060</color>
+
+    <!-- Screens background color-->
+    <color name="bg_screen1">#18592E</color>
+    <color name="bg">#e7e7e7</color>
+    <color name="bg1">#f7f7f7</color>
+    <color name="text_color">#18592E</color>
+
+    <!-- dots inactive colors -->
+    <color name="dot_dark_screen1">#FFFFFF</color>
+
+    <!-- dots active colors -->
+    <color name="dot_light_screen1">#18592E</color>
+
+    <!-- Placeholder colors-->
+    <color name="stay_color">#c7c7c7</color>
+
 </resources>

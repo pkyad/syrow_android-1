@@ -1,7 +1,9 @@
 package in.cioc.syrow.adapter;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
@@ -14,11 +16,15 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -83,7 +89,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
         int imagePosition = 0;
 
         try {
-            if (message.getMessage().equals("")||message.getMessage().equals("null")||message.getMessage()==null){
+//            if (message.getMessage().equals("")||message.getMessage().equals("null")||message.getMessage()==null){
                 if (!(message.getAttachment().equals("")||message.getAttachment().equals("null")||message.getAttachment()==null)) {
                     holder.message.setVisibility(View.GONE);
                     holder.messageImage.setVisibility(View.VISIBLE);
@@ -102,14 +108,40 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                         }
                     });
                 }
-            } else {
-                holder.messageImage.setVisibility(View.GONE);
-                holder.message.setVisibility(View.VISIBLE);
+            else {
+                if((message.getAttachmentType().equals("youtubeLink"))){
+                    holder.message.setVisibility(View.GONE);
+                    holder.messageImage.setVisibility(View.VISIBLE);
+//                    String[] id = message.getMessage().split("https://www.youtube.com/embed/");
+                    List<String> strings = Arrays.asList(message.getMessage().split("/"));
+                    String id = strings.set(strings.size() - 1,"");
+//                    if(message.getMessage().split("/") != null && message.getMessage().split("/").length > 0) {
+//                        id = message.getMessage().split("/")[message.getMessage().split("/").length - 1];
+//                    }
+                    Glide.with(mContext)
+                            .load("https://img.youtube.com/vi/"+id+"/0.jpg")
+                            .into(holder.messageImage);
+                    holder.messageImage.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + id));
+                            Intent webIntent = new Intent(Intent.ACTION_VIEW,
+                                    Uri.parse("http://www.youtube.com/watch?v=" + id));
+                            try {
+                                mContext.startActivity(appIntent);
+                            } catch (ActivityNotFoundException ex) {
+                                mContext.startActivity(webIntent);
+                            }
+                        }
+                    });
 
-
-                if (message.getMessage().contains("<p>")){
+                } else if (message.getMessage().contains("<p>")){
+                    holder.messageImage.setVisibility(View.GONE);
+                    holder.message.setVisibility(View.VISIBLE);
                     ((ViewHolder) holder).message.setText(Html.fromHtml(message.getMessage(), Html.FROM_HTML_MODE_COMPACT));
                 }else{
+                    holder.messageImage.setVisibility(View.GONE);
+                    holder.message.setVisibility(View.VISIBLE);
                     ((ViewHolder) holder).message.setText(message.getMessage());
                 }
 
@@ -166,8 +198,6 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
             e.printStackTrace();
         }
 
-
-
     }
 
     @Override
@@ -182,6 +212,19 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     @Override
     public int getItemCount() {
         return messageArrayList.size();
+    }
+
+    public String extractYoutubeId(String url) throws MalformedURLException {
+        String query = new URL(url).getQuery();
+        String[] param = query.split("&");
+        String id = null;
+        for (String row : param) {
+            String[] param1 = row.split("=");
+            if (param1[0].equals("v")) {
+                id = param1[1];
+            }
+        }
+        return id;
     }
 
     public static String getTimeStamp(String dateStr) {

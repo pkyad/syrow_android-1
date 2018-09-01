@@ -8,19 +8,27 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.content.res.ResourcesCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -28,6 +36,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RatingBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
@@ -56,6 +66,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 
 import cz.msebera.android.httpclient.Header;
@@ -89,25 +101,24 @@ public class ChatRoomActivity extends AppCompatActivity {
     Session session;
     Client client1;
     CompletableFuture<ExitInfo> exitInfoCompletableFuture;
-    private String chatRoomId;
+    private String chatRoomId, path, base64="", userChooseTask, millSec;
     private RecyclerView recyclerView;
     private ChatRoomThreadAdapter mAdapter;
     private ArrayList<Message> messageArrayList;
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     private EditText inputMessage;
-    private ImageView btnSend, btnAttach;
+    private TextView userName;
+    private View offLineAndOnLine;
+    private ImageView btnSend, btnAttach, userImage;
     private AsyncHttpClient client;
     boolean thread = true;
-    private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
-    String base64="";
+    private int REQUEST_CAMERA = 0, SELECT_FILE = 1,  choose;
     Bitmap bitmap;
-    String path;
-    int choose;
-    private String userChooseTask;
-    String millSec;
-
-
     Context context;
+    public static final long INTERVAL = 1000 * 25;
+    private Handler mHandler = new Handler();
+    private Timer mTimer = null;
+    TimerTask timerTask;
 
     SharedPreferences sp;
     SharedPreferences.Editor spe;
@@ -125,20 +136,59 @@ public class ChatRoomActivity extends AppCompatActivity {
         sp = context.getSharedPreferences("registered_status", Context.MODE_PRIVATE);
         spe = sp.edit();
 
-
-
         client = new AsyncHttpClient();
         choose=1;
         inputMessage = findViewById(R.id.message);
         btnSend = findViewById(R.id.btn_send);
         btnAttach = findViewById(R.id.btn_attach);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        userName = findViewById(R.id.user_name);
+        userImage = findViewById(R.id.user_image);
+        offLineAndOnLine = findViewById(R.id.off_on_line);
+//
+//        userImage.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Toast.makeText(getBaseContext(),
+//                        "Name in ToolBar clicked",
+//                        Toast.LENGTH_LONG).show();
+//                userName.setText("User Name");
+//                offLineAndOnLine.setBackground(getResources().getDrawable(R.drawable.chat_bubble_green_circle));
+//            }
+//        });
+
         Intent intent = getIntent();
         chatRoomId = intent.getStringExtra("chat_room_id");
-        String title = intent.getStringExtra("name");
+//        String title = intent.getStringExtra("name");
 
-        getSupportActionBar().setTitle("Syrow");
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//        getSupportActionBar().setTitle("Syrow");
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+
+        toggle.setDrawerIndicatorEnabled(false);
+        Drawable drawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_arrow_back_white_24dp, getApplicationContext().getTheme());
+        toggle.setHomeAsUpIndicator(drawable);
+        toggle.setToolbarNavigationClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showFeedbackForm();
+            }
+        });
+
+
+        if (mTimer != null)
+            mTimer.cancel();
+        else
+            mTimer = new Timer(); // recreate new timer
+        mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, INTERVAL);
 
         if (chatRoomId == null) {
             Toast.makeText(getApplicationContext(), "Chat room not found!", Toast.LENGTH_SHORT).show();
@@ -148,19 +198,10 @@ public class ChatRoomActivity extends AppCompatActivity {
         messageArrayList = new ArrayList<>();
 
 
-
-
-
-
-
-
         // self user id is to identify the message owner
         String selfUserId = "3333";
 
         mAdapter = new ChatRoomThreadAdapter(this, messageArrayList, selfUserId);
-
-
-
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
@@ -192,8 +233,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
 
 
-
-
         millSec = sp.getString("millSec", null);
 
         if (millSec == null){
@@ -205,8 +244,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         session.addOnJoinListener(this::demonstrateSubscribe);
         client1 = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
         exitInfoCompletableFuture = client1.connect();
-
-
 
         if (Build.VERSION.SDK_INT >= 11) {
             recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
@@ -238,6 +275,8 @@ public class ChatRoomActivity extends AppCompatActivity {
                     JSONObject compProfile = response.getJSONObject(0);
 
                     String firstMessage = compProfile.getString("firstMessage");
+                    userName.setText(compProfile.getString("name"));
+
 
                     Date todaysDate = new Date();
                     DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -264,9 +303,36 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
 
 //        resetUID();
+    }
 
+    public void showFeedbackForm(){
+        View v = getLayoutInflater().inflate(R.layout.layout_feedback_rating, null, false);
+        Button btnCancel = v.findViewById(R.id.action_btn_cancel);
+        Button btnSubmit = v.findViewById(R.id.action_btn_submit);
+        RatingBar ratingFeedback = v.findViewById(R.id.rating_bar);
+        EditText feedbackText = v.findViewById(R.id.feedback_text);
 
-
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setView(v);
+        AlertDialog ad = builder.create();
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ad.dismiss();
+                finish();
+            }
+        });
+        btnSubmit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String feedback = feedbackText.getText().toString().trim();
+                Toast.makeText(context, "Feedback: "+ratingFeedback.getRating()+"\n"+feedback, Toast.LENGTH_SHORT).show();
+                resetUID();
+                ad.dismiss();
+                finish();
+            }
+        });
+        ad.show();
     }
 
     public void resetUID(){
@@ -296,9 +362,6 @@ public class ChatRoomActivity extends AppCompatActivity {
         regFuture.thenAccept(registration ->
                 System.out.println("Successfully registered procedure: " + registration.procedure));
 
-
-
-
     }
 
     private void onEvent(List<Object> args, Map<String, Object> kwargs, EventDetails details) {
@@ -313,12 +376,11 @@ public class ChatRoomActivity extends AppCompatActivity {
 
         String agentName = args.get(2).toString();
 
-        getSupportActionBar().setTitle( agentName.substring(0, 1).toUpperCase() + agentName.substring(1));
+//        getSupportActionBar().setTitle( agentName.substring(0, 1).toUpperCase() + agentName.substring(1));
+        userName.setText(agentName.substring(0, 1).toUpperCase() + agentName.substring(1));
 
 
-//        getSupportActionBar().setCustomView();
-
-        if (args.get(0).toString().equals("M")){
+        if (args.get(0).toString().equals("M") || args.get(0).toString().equals("ML")){
             try {
                 User user = new User( ((LinkedHashMap.Entry <String ,Object> )argsMap[4]).getValue().toString() , "Agent", null);
             }catch(Exception e){
@@ -339,15 +401,11 @@ public class ChatRoomActivity extends AppCompatActivity {
 
             message.setCreated(((LinkedHashMap.Entry <String ,Object> )argsMap[1]).getValue().toString());
 
-
-
             try{
                 message.setAttachment(((LinkedHashMap.Entry <String ,Object> )argsMap[7]).getValue().toString());
             }catch (Exception e){
                 e.printStackTrace();
             }
-
-
 
             try{
                 message.setAttachmentType(((LinkedHashMap.Entry <String ,Object> )argsMap[2]).getValue().toString());
@@ -378,8 +436,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                     super.onSuccess(statusCode, headers, response);
-
-
                     try {
                         Message message = new Message();
                         message.setPk(response.getString("pk"));
@@ -400,12 +456,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
-
-
-
-
-
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
@@ -414,16 +464,7 @@ public class ChatRoomActivity extends AppCompatActivity {
                 }
             });
 
-
-
         }
-
-
-
-
-
-
-
 
     }
 
@@ -431,6 +472,20 @@ public class ChatRoomActivity extends AppCompatActivity {
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mRegistrationBroadcastReceiver);
         super.onPause();
+    }
+
+
+    private class TimeDisplayTimerTask extends TimerTask {
+        @Override
+        public void run() {
+            // run on another thread
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
+        }
     }
 
     /**
@@ -451,9 +506,6 @@ public class ChatRoomActivity extends AppCompatActivity {
     }
 
     private void selectImage() {
-        final CharSequence[] items = { "Take Photo", "Choose a photo from the gallery",
-                "Cancel" };
-
         View v = getLayoutInflater().inflate(R.layout.layout_gallery_and_camera, null, false);
         ImageView btnCamera = v.findViewById(R.id.btn_camera);
         ImageView btnGallery = v.findViewById(R.id.btn_gallery);
@@ -493,13 +545,12 @@ public class ChatRoomActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Enter a message", Toast.LENGTH_SHORT).show();
                 return;
             }
+
             params.put("message", message);
             params.put("sentByAgent", false);
             params.put("uid", millSec);
-//            params.put("user", "");
         } else {
             if (bitmap!=null) {
-//            try {
                 ByteArrayOutputStream output = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
                 byte[] image = output.toByteArray();
@@ -507,10 +558,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                 params.put("sentByAgent", false);
                 params.put("attachmentType", "image");
                 params.put("uid", millSec);
-//                params.put("user", "");
-//            } catch (FileNotFoundException e) {
-//                e.printStackTrace();
-//            }
             }
         }
         client.post(Backend.url+"/api/support/supportChat/", params, new JsonHttpResponseHandler(){
@@ -536,7 +583,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                         mm.setFilePk(object.getString("pk"));
                         mm.setTyp("image");
                         mm.setUser(object.getString("user"));
-
 
                         session.publish("service.support.agent", userId, "MF", mm);
                     }
@@ -773,5 +819,13 @@ public class ChatRoomActivity extends AppCompatActivity {
         if (mAdapter.getItemCount() > 1) {
             recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
         }
+    }
+    boolean res=false;
+
+    @Override
+    public void onBackPressed() {
+        showFeedbackForm();
+        if (res)
+        super.onBackPressed();
     }
 }
