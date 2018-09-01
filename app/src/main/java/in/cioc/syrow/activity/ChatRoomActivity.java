@@ -4,9 +4,14 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -40,10 +45,15 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -59,6 +69,7 @@ import in.cioc.syrow.app.Config;
 import in.cioc.syrow.helper.Utility;
 import in.cioc.syrow.model.AdminChat;
 import in.cioc.syrow.model.ChatThread;
+import in.cioc.syrow.model.MediaMessage;
 import in.cioc.syrow.model.Message;
 import in.cioc.syrow.model.User;
 import io.crossbar.autobahn.wamp.Client;
@@ -66,7 +77,9 @@ import io.crossbar.autobahn.wamp.Session;
 import io.crossbar.autobahn.wamp.messages.Publish;
 import io.crossbar.autobahn.wamp.types.EventDetails;
 import io.crossbar.autobahn.wamp.types.ExitInfo;
+import io.crossbar.autobahn.wamp.types.InvocationDetails;
 import io.crossbar.autobahn.wamp.types.Publication;
+import io.crossbar.autobahn.wamp.types.Registration;
 import io.crossbar.autobahn.wamp.types.SessionDetails;
 import io.crossbar.autobahn.wamp.types.Subscription;
 
@@ -85,19 +98,35 @@ public class ChatRoomActivity extends AppCompatActivity {
     private ImageView btnSend, btnAttach;
     private AsyncHttpClient client;
     boolean thread = true;
-    Context context;
     private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
     String base64="";
     Bitmap bitmap;
     String path;
     int choose;
     private String userChooseTask;
-    long millSec = Calendar.getInstance().getTimeInMillis();
+    String millSec;
+
+
+    Context context;
+
+    SharedPreferences sp;
+    SharedPreferences.Editor spe;
+    String companyID = "1";
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat_room);
         this.context = ChatRoomActivity.this;
+
+
+        this.context = context;
+        sp = context.getSharedPreferences("registered_status", Context.MODE_PRIVATE);
+        spe = sp.edit();
+
+
+
         client = new AsyncHttpClient();
         choose=1;
         inputMessage = findViewById(R.id.message);
@@ -118,10 +147,20 @@ public class ChatRoomActivity extends AppCompatActivity {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         messageArrayList = new ArrayList<>();
 
+
+
+
+
+
+
+
         // self user id is to identify the message owner
         String selfUserId = "3333";
 
         mAdapter = new ChatRoomThreadAdapter(this, messageArrayList, selfUserId);
+
+
+
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
@@ -152,15 +191,96 @@ public class ChatRoomActivity extends AppCompatActivity {
             }
         });
 
+
+
+
+        millSec = sp.getString("millSec", null);
+
+        if (millSec == null){
+            resetUID();
+        }
+
         fetchChatThread();
         session = new Session();
         session.addOnJoinListener(this::demonstrateSubscribe);
         client1 = new Client(session, "ws://wamp.cioc.in:8090/ws", "default");
         exitInfoCompletableFuture = client1.connect();
+
+
+
+        if (Build.VERSION.SDK_INT >= 11) {
+            recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View v,
+                                           int left, int top, int right, int bottom,
+                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    if (bottom < oldBottom) {
+                        recyclerView.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                recyclerView.smoothScrollToPosition(
+                                        recyclerView.getAdapter().getItemCount() - 1);
+                            }
+                        }, 100);
+                    }
+                }
+            });
+        }
+
+
+
+        client.get(Backend.url + "/api/support/customerProfile/?service=" + companyID , new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                super.onSuccess(statusCode, headers, response);
+
+                try {
+                    JSONObject compProfile = response.getJSONObject(0);
+
+                    String firstMessage = compProfile.getString("firstMessage");
+
+                    Date todaysDate = new Date();
+                    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+                    Message message = new Message();
+                    message.setUid(millSec);
+                    message.setSentByAgent(true);
+                    message.setMessage(firstMessage);
+                    message.setUser("00");
+                    message.setCreated(df.format(todaysDate));
+                    messageArrayList.add(message);
+                    mAdapter.notifyDataSetChanged();
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+                Toast.makeText(ChatRoomActivity.this, "onFailure "+thread, Toast.LENGTH_SHORT).show();
+            }
+
+        });
+
+//        resetUID();
+
+
+
+    }
+
+    public void resetUID(){
+        millSec = Long.toString(Calendar.getInstance().getTimeInMillis());
+        spe.putString("millSec" , millSec );
+        spe.apply();
+    }
+
+    private String add2(List<Integer> args, InvocationDetails details) {
+        return millSec;
     }
 
     public void demonstrateSubscribe(Session session, SessionDetails details) {
-        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.chat" ,
+        CompletableFuture<Subscription> subFuture = session.subscribe("service.support.chat." + millSec,
                 this::onEvent);
         subFuture.whenComplete((subscription, throwable) -> {
             if (throwable == null) {
@@ -170,13 +290,140 @@ public class ChatRoomActivity extends AppCompatActivity {
                 throwable.printStackTrace();
             }
         });
+
+
+        CompletableFuture<Registration> regFuture = session.register("service.support.heartbeat." + millSec , this::add2);
+        regFuture.thenAccept(registration ->
+                System.out.println("Successfully registered procedure: " + registration.procedure));
+
+
+
+
     }
 
     private void onEvent(List<Object> args, Map<String, Object> kwargs, EventDetails details) {
+
         System.out.println(String.format("Got event: %s", args.get(0)));
         Toast.makeText(getApplicationContext(), "event "+args.get(0), Toast.LENGTH_SHORT).show();
 
         // add a notification strip here
+
+        Object[] argsMap = ((LinkedHashMap)args.get(1)).entrySet().toArray();
+
+
+        String agentName = args.get(2).toString();
+
+        getSupportActionBar().setTitle( agentName.substring(0, 1).toUpperCase() + agentName.substring(1));
+
+
+//        getSupportActionBar().setCustomView();
+
+        if (args.get(0).toString().equals("M")){
+            try {
+                User user = new User( ((LinkedHashMap.Entry <String ,Object> )argsMap[4]).getValue().toString() , "Agent", null);
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+
+
+            Message message = new Message();
+            message.setPk(((LinkedHashMap.Entry <String ,Object> )argsMap[5]).getValue().toString());
+            message.setUser(((LinkedHashMap.Entry <String ,Object> )argsMap[4]).getValue().toString());
+            message.setSentByAgent(true);
+
+            try{
+                message.setMessage(((LinkedHashMap.Entry <String ,Object> )argsMap[6]).getValue().toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            message.setCreated(((LinkedHashMap.Entry <String ,Object> )argsMap[1]).getValue().toString());
+
+
+
+            try{
+                message.setAttachment(((LinkedHashMap.Entry <String ,Object> )argsMap[7]).getValue().toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+
+
+            try{
+                message.setAttachmentType(((LinkedHashMap.Entry <String ,Object> )argsMap[2]).getValue().toString());
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            messageArrayList.add(message);
+
+
+            mAdapter.notifyDataSetChanged();
+            if (mAdapter.getItemCount() > 1) {
+                recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
+            }
+
+            try {
+                Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                Ringtone r = RingtoneManager.getRingtone(getApplicationContext(), notification);
+                r.play();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }else{
+
+            //http://syrow.cioc.in/api/support/supportChat/334/
+
+            client.get(Backend.url+"/api/support/supportChat/" + ((LinkedHashMap.Entry <String ,Object> )argsMap[0]).getValue().toString() + "/" , new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    super.onSuccess(statusCode, headers, response);
+
+
+                    try {
+                        Message message = new Message();
+                        message.setPk(response.getString("pk"));
+                        message.setUser(response.getString("user"));
+                        message.setSentByAgent(response.getBoolean("sentByAgent"));
+                        message.setMessage(response.getString("message"));
+                        message.setAttachment(response.getString("attachment"));
+                        message.setCreated(response.getString("created"));
+                        message.setAttachmentType(response.getString("attachmentType"));
+                        messageArrayList.add(message);
+
+                        mAdapter.notifyDataSetChanged();
+                        if (mAdapter.getItemCount() > 1) {
+                            // scrolling to bottom of the recycler view
+                            recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+
+
+
+
+
+                }
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                    super.onFailure(statusCode, headers, throwable, errorResponse);
+                    Toast.makeText(ChatRoomActivity.this, "onFailure "+thread, Toast.LENGTH_SHORT).show();
+                }
+            });
+
+
+
+        }
+
+
+
+
+
+
+
 
     }
 
@@ -256,9 +503,9 @@ public class ChatRoomActivity extends AppCompatActivity {
                 ByteArrayOutputStream output = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, output);
                 byte[] image = output.toByteArray();
-                params.put("attachment", new ByteArrayInputStream(image), msg + ".jpeg");
+                params.put("attachment", new ByteArrayInputStream(image), msg);
                 params.put("sentByAgent", false);
-                params.put("attachmentType", "Image");
+                params.put("attachmentType", "image");
                 params.put("uid", millSec);
 //                params.put("user", "");
 //            } catch (FileNotFoundException e) {
@@ -281,9 +528,38 @@ public class ChatRoomActivity extends AppCompatActivity {
                     message.setCreated(object.getString("created"));
                     message.setAttachmentType(object.getString("attachmentType"));
                     messageArrayList.add(message);
-                    if (!(message.getMessage().equals("null")))
+                    if (!(message.getMessage().equals("null"))){
                         session.publish("service.support.agent", userId, "M", message);
-                    else session.publish("service.support.agent", userId, "MF", message);
+                    }else{
+
+                        MediaMessage mm = new MediaMessage();
+                        mm.setFilePk(object.getString("pk"));
+                        mm.setTyp("image");
+                        mm.setUser(object.getString("user"));
+
+
+                        session.publish("service.support.agent", userId, "MF", mm);
+                    }
+
+
+
+//                    (3) […]
+//​
+//                    0: "1535747475253"
+//​
+//                    1: "MF"
+//​
+//                    2: {…}
+//​​
+//                    filePk: 327
+//​​
+//                    typ: "image"
+//​​
+//                    user: 1
+//​​
+
+
+
                     mAdapter.notifyDataSetChanged();
                     if (mAdapter.getItemCount() > 1) {
                         // scrolling to bottom of the recycler view
@@ -303,7 +579,7 @@ public class ChatRoomActivity extends AppCompatActivity {
         });
 
         RequestParams threadParams = new RequestParams();
-        threadParams.put("company", "1");
+        threadParams.put("company", companyID);
         threadParams.put("uid",millSec);
         if (thread){
             client.post(Backend.url+"/api/support/chatThread/", threadParams, new JsonHttpResponseHandler() {
@@ -436,7 +712,7 @@ public class ChatRoomActivity extends AppCompatActivity {
      * */
     private void fetchChatThread() {
         //api/support/supportChat/?uid=1535435396312
-        client.get(Backend.url+"/api/support/supportChat/?uid=1535521713227", new JsonHttpResponseHandler(){
+        client.get(Backend.url+"/api/support/supportChat/?uid=" + millSec, new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
                 super.onSuccess(statusCode, headers, response);

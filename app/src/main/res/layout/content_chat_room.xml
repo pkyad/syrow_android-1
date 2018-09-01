@@ -72,7 +72,7 @@
             android:background="@drawable/bg_btn_shape"
             android:src="@drawable/ic_send_black_24dp"
             android:layout_gravity="center"
-            android:padding="5dp"/>
+            android:padding="10dp"/>
     </LinearLayout>
 
 </LinearLayout>

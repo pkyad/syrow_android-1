@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,69 +81,92 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Message message = messageArrayList.get(position);
         int imagePosition = 0;
-        if (message.getMessage().equals("")||message.getMessage().equals("null")||message.getMessage()==null){
-            if (!(message.getAttachment().equals("")||message.getAttachment().equals("null")||message.getAttachment()==null)) {
-                holder.message.setVisibility(View.GONE);
-                holder.messageImage.setVisibility(View.VISIBLE);
+
+        try {
+            if (message.getMessage().equals("")||message.getMessage().equals("null")||message.getMessage()==null){
+                if (!(message.getAttachment().equals("")||message.getAttachment().equals("null")||message.getAttachment()==null)) {
+                    holder.message.setVisibility(View.GONE);
+                    holder.messageImage.setVisibility(View.VISIBLE);
 //                Uri uri = Uri.parse(message.getMessageImg());
 //                holder.messageImage.setImageURI(uri);
-                Glide.with(mContext)
-                        .load(message.getAttachment())
-                        .into(holder.messageImage);
-                holder.messageImage.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        Intent intent = new Intent(mContext, ViewPagerActivity.class);
-                        intent.putExtra("position", imagePosition);
-                        intent.putExtra("imageUrl", message.getAttachment());
-                        mContext.startActivity(intent);
-                    }
-                });
-            }
-        } else {
-            holder.messageImage.setVisibility(View.GONE);
-            holder.message.setVisibility(View.VISIBLE);
-            ((ViewHolder) holder).message.setText(message.getMessage());
-        }
-
-        String timestamp = "";//getTimeStamp(message.getCreatedAt());
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
-        SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
-        inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
-        outputFormat.setTimeZone(TimeZone.getDefault());
-        Date date = null;
-        String format;
-        try {
-            date = inputFormat.parse(message.getCreated());
-            int hourOfDay = date.getHours();
-            if (hourOfDay == 0) {
-                hourOfDay += 12;
-                format = " AM";
-            } else if (hourOfDay == 12) {
-                format = " PM";
-            } else if (hourOfDay > 12) {
-                hourOfDay -= 12;
-                format = " PM";
+                    Glide.with(mContext)
+                            .load(message.getAttachment())
+                            .into(holder.messageImage);
+                    holder.messageImage.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Intent intent = new Intent(mContext, ViewPagerActivity.class);
+                            intent.putExtra("position", imagePosition);
+                            intent.putExtra("imageUrl", message.getAttachment());
+                            mContext.startActivity(intent);
+                        }
+                    });
+                }
             } else {
-                format = " AM";
+                holder.messageImage.setVisibility(View.GONE);
+                holder.message.setVisibility(View.VISIBLE);
+
+
+                if (message.getMessage().contains("<p>")){
+                    ((ViewHolder) holder).message.setText(Html.fromHtml(message.getMessage(), Html.FROM_HTML_MODE_COMPACT));
+                }else{
+                    ((ViewHolder) holder).message.setText(message.getMessage());
+                }
+
+
+
             }
-            if (String.valueOf(hourOfDay).length()==1 && String.valueOf(date.getMinutes()).length()==1)
-                timestamp = "0"+hourOfDay + ":0"+ date.getMinutes() + format;
-            else  if (String.valueOf(hourOfDay).length()==1||String.valueOf(date.getMinutes()).length()==1)
-                if (String.valueOf(hourOfDay).length()==1)
-                    timestamp = "0"+hourOfDay + ":" + date.getMinutes() + format;
-            if (String.valueOf(date.getMinutes()).length()==1)
-                timestamp = hourOfDay + ":0" + date.getMinutes() + format;
-            else
-                timestamp = hourOfDay + ":" + date.getMinutes() + format;
-        } catch (ParseException e) {
+
+            String timestamp = "";//getTimeStamp(message.getCreatedAt());
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
+            SimpleDateFormat outputFormat = new SimpleDateFormat("HH:mm");
+            SimpleDateFormat inputFormat2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+            inputFormat.setTimeZone(TimeZone.getTimeZone("IST"));
+            outputFormat.setTimeZone(TimeZone.getDefault());
+            Date date = null;
+            String format;
+            try {
+
+                try{
+                    date = inputFormat.parse(message.getCreated());
+                }catch (Exception e){
+                    date = inputFormat2.parse(message.getCreated());
+                }
+
+                int hourOfDay = date.getHours();
+                if (hourOfDay == 0) {
+                    hourOfDay += 12;
+                    format = " AM";
+                } else if (hourOfDay == 12) {
+                    format = " PM";
+                } else if (hourOfDay > 12) {
+                    hourOfDay -= 12;
+                    format = " PM";
+                } else {
+                    format = " AM";
+                }
+                if (String.valueOf(hourOfDay).length()==1 && String.valueOf(date.getMinutes()).length()==1)
+                    timestamp = "0"+hourOfDay + ":0"+ date.getMinutes() + format;
+                else  if (String.valueOf(hourOfDay).length()==1||String.valueOf(date.getMinutes()).length()==1)
+                    if (String.valueOf(hourOfDay).length()==1)
+                        timestamp = "0"+hourOfDay + ":" + date.getMinutes() + format;
+                if (String.valueOf(date.getMinutes()).length()==1)
+                    timestamp = hourOfDay + ":0" + date.getMinutes() + format;
+                else
+                    timestamp = hourOfDay + ":" + date.getMinutes() + format;
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            if (message.getCreated() != null) {
+                holder.timestamp.setText(timestamp);
+            } else {
+                holder.timestamp.setText(timestamp);
+            }
+        }catch (Exception e){
             e.printStackTrace();
         }
-        if (message.getCreated() != null) {
-            holder.timestamp.setText(timestamp);
-        } else {
-            holder.timestamp.setText(timestamp);
-        }
+
+
 
     }
 
