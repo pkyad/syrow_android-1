@@ -109,18 +109,18 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                 if((message.getAttachmentType().equals("youtubeLink"))){
                     holder.message.setVisibility(View.GONE);
                     holder.messageImage.setVisibility(View.VISIBLE);
-                    String[] id = message.getMessage().split("https://www.youtube.com/embed/");
-//                    int index = message.getMessage().lastIndexOf('/');
-//                    String id = message.getMessage().substring(index +1);
+//                    String[] id = message.getMessage().split("https://www.youtube.com/embed/");
+                    int index = message.getMessage().lastIndexOf('/');
+                    String id = message.getMessage().substring(index +1);
                     Glide.with(mContext)
-                            .load("https://img.youtube.com/vi/"+id[1]+"/0.jpg")
+                            .load("https://img.youtube.com/vi/"+id+"/0.jpg")
                             .into(holder.messageImage);
                     holder.messageImage.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + id[1]));
+                            Intent appIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + id));
                             Intent webIntent = new Intent(Intent.ACTION_VIEW,
-                                    Uri.parse("http://www.youtube.com/watch?v=" + id[1]));
+                                    Uri.parse("http://www.youtube.com/watch?v=" + id));
                             try {
                                 mContext.startActivity(appIntent);
                             } catch (ActivityNotFoundException ex) {
@@ -174,8 +174,7 @@ public class ChatRoomThreadAdapter extends RecyclerView.Adapter<ChatRoomThreadAd
                     timestamp = "0"+hourOfDay + ":0"+ date.getMinutes() + format;
                 else  if (String.valueOf(hourOfDay).length()==1||String.valueOf(date.getMinutes()).length()==1)
                     if (String.valueOf(hourOfDay).length()==1)
-                        timestamp = "0"+hourOfDay + ":" + date.getMinutes() + format;
-                if (String.valueOf(date.getMinutes()).length()==1)
+                        timestamp = "0"+hourOfDay + ":" + date.getMinutes() + format;if (String.valueOf(date.getMinutes()).length()==1)
                     timestamp = hourOfDay + ":0" + date.getMinutes() + format;
                 else
                     timestamp = hourOfDay + ":" + date.getMinutes() + format;
