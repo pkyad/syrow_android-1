@@ -38,10 +38,10 @@ import android.widget.ImageView.ScaleType;
 
 import java.lang.ref.WeakReference;
 
+import in.cioc.syrow.log.LogManager;
 import in.cioc.syrow.photoview.gestures.OnGestureListener;
 import in.cioc.syrow.photoview.gestures.VersionedGestureDetector;
 import in.cioc.syrow.photoview.scrollerproxy.ScrollerProxy;
-import uk.co.senab.photoview.log.LogManager;
 
 import static android.view.MotionEvent.ACTION_CANCEL;
 import static android.view.MotionEvent.ACTION_DOWN;
