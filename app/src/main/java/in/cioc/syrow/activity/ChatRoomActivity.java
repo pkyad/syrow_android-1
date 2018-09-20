@@ -587,8 +587,6 @@ public class ChatRoomActivity extends AppCompatActivity {
                         session.publish("service.support.agent", userId, "MF", mm);
                     }
 
-
-
 //                    (3) […]
 //​
 //                    0: "1535747475253"
